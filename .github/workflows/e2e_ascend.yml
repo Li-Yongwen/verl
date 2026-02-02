@@ -170,6 +170,14 @@ jobs:
           USE_DIST_CKPT=True bash tests/special_npu/run_qwen2_5_05b_grpo_mindspeed.sh
           rm -rf $HOME/dist_ckpt/qwen2_5_05b_grpo_mindspeed
           rm -rf $HOME/ckpts
+      - name: Running gsm8k e2e training tests with GRPO on ASCEND NPU (MindSpeed backend with fault recover recipe)
+        run: |
+          ray stop --force
+          rm -rf $HOME/tokens_ckpt
+          export PYTHONPATH=$PYTHONPATH:/Megatron-LM
+          USE_DIST_CKPT=True bash tests/special_npu/run_qwen2_5_05b_grpo_mindspeed_fault_recover.sh
+          rm -rf $HOME/dist_ckpt/qwen2_5_05b_grpo_mindspeed
+          rm -rf $HOME/ckpts
       - name: Running gsm8k e2e training tests with GRPO on ASCEND NPU (MindSpeed backend, MoE Model)
         run: |
           ray stop --force
