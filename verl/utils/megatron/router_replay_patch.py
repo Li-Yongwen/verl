@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import types
 import warnings
 from enum import Enum
 
@@ -281,6 +282,32 @@ def patched_routing(self, logits: torch.Tensor, *args, **kwargs):
             drop_policy=self.config.moe_token_drop_policy,
             pad_to_capacity=self.config.moe_pad_expert_input_to_capacity,
         )
+
+    def _is_aux_loss_enabled(_self) -> bool:
+        """Check if the auxiliary loss is enabled."""
+        for aux_loss_type in ["aux_loss", "seq_aux_loss", "global_aux_loss"]:
+            if _get_aux_loss_coeff(_self, aux_loss_type) > 0:
+                return True
+        return False
+
+    def _get_aux_loss_coeff(_self, aux_loss_type: str) -> float:
+        """Return the aux loss coeff for the given auxiliary loss type.
+        If the auxiliary loss type is not found, return 0.0.
+        """
+        if isinstance(_self.routing_type, str):
+            if _self.routing_type == aux_loss_type:
+                return _self.config.moe_aux_loss_coeff
+        if isinstance(_self.routing_type, list):
+            try:
+                idx = _self.routing_type.index(aux_loss_type)
+                return _self.config.moe_aux_loss_coeff[idx]
+            except ValueError:
+                return 0.0
+        return 0.0
+
+
+    if not hasattr(self, "is_aux_loss_enabled"):
+        self.is_aux_loss_enabled = types.MethodType(_is_aux_loss_enabled, self)
 
     # Apply each aux loss type and attach aux loss autograd function to probs
     if self.training and torch.is_grad_enabled() and self.is_aux_loss_enabled():
